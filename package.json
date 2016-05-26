@@ -17,7 +17,7 @@
     "mock",
     "mocking"
   ],
-  "author": "Matt Zabriskie <mzabriskie@gmail.com> (http://mattzabriskie.com)",
+  "author": "Matt Zabriskie",
   "license": "MIT",
   "bugs": {
     "url": "https://github.com/mzabriskie/moxios/issues"
@@ -33,13 +33,12 @@
     "karma-cli": "^1.0.0",
     "karma-firefox-launcher": "^1.0.0",
     "karma-mocha": "^1.0.1",
-    "karma-sinon-chai": "^1.2.0",
+    "karma-sinon": "^1.0.5",
     "karma-sourcemap-loader": "^0.3.7",
     "karma-webpack": "^1.7.0",
     "lolex": "^1.5.0",
     "mocha": "^2.5.3",
     "sinon": "^1.17.4",
-    "sinon-chai": "^2.8.0",
     "webpack": "^1.13.1",
     "webpack-dev-server": "^1.14.1"
   }
