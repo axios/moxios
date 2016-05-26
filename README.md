@@ -1,11 +1,11 @@
-# moxios
+# moxios [![build status](https://img.shields.io/travis/mzabriskie/moxios.svg?style=flat-square)](https://travis-ci.org/mzabriskie/moxios)
 
 Mock axios requests for testing
 
 ## Installing
 
 ```bash
-$ npm install moxios
+$ npm install moxios --save-dev
 ```
 
 ## Example
@@ -19,6 +19,7 @@ import { equal } from 'assert'
 describe('mocking axios requests', function () {
 
   describe('across entire suite', function () {
+
     beforeEach(function () {
       moxios.install()
     })
@@ -72,9 +73,10 @@ describe('mocking axios requests', function () {
         done()
       })
     })
+
   })
 
-  describe('just for a single spec', function (done) {
+  it('just for a single spec', function (done) {
     moxios.withMock(function () {
       let onFulfilled = sinon.spy()
       axios.get('/users/12345').then(onFulfilled)
@@ -93,5 +95,14 @@ describe('mocking axios requests', function () {
       })
     })
   })
+
 })
 ```
+
+## Thanks
+
+moxios is heavily inspired by [jasmine-ajax](https://github.com/jasmine/jasmine-ajax)
+
+## License
+
+MIT
