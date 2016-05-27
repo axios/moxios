@@ -1,6 +1,6 @@
 {
   "name": "moxios",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "Mock axios requests for testing",
   "main": "index.js",
   "scripts": {
@@ -10,7 +10,9 @@
     "version": "npm run build && git add -A dist/",
     "postversion": "git push && git push --tags"
   },
-  "files": ["build/"],
+  "files": [
+    "build/"
+  ],
   "repository": {
     "type": "git",
     "url": "git+https://github.com/mzabriskie/moxios.git"

@@ -94,6 +94,8 @@ return /******/ (function(modules) { // webpackBootstrap
 	
 	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 	
+	var DEFAULT_WAIT_DELAY = 100;
+	
 	// The default adapter
 	var defaultAdapter = void 0;
 	
@@ -118,98 +120,6 @@ return /******/ (function(modules) { // webpackBootstrap
 	  }
 	};
 	
-	var Moxios = function () {
-	  function Moxios() {
-	    var delay = arguments.length <= 0 || arguments[0] === undefined ? 100 : arguments[0];
-	
-	    _classCallCheck(this, Moxios);
-	
-	    this.stubs = new Tracker();
-	    this.requests = new Tracker();
-	    this.delay = delay;
-	  }
-	
-	  /**
-	   * Install the mock adapter for axios
-	   */
-	
-	
-	  _createClass(Moxios, [{
-	    key: 'install',
-	    value: function install() {
-	      var instance = arguments.length <= 0 || arguments[0] === undefined ? _axios2.default : arguments[0];
-	
-	      defaultAdapter = instance.defaults.adapter;
-	      instance.defaults.adapter = mockAdapter;
-	    }
-	
-	    /**
-	    * Uninstall the mock adapter and reset state
-	    */
-	
-	  }, {
-	    key: 'uninstall',
-	    value: function uninstall() {
-	      var instance = arguments.length <= 0 || arguments[0] === undefined ? _axios2.default : arguments[0];
-	
-	      instance.defaults.adapter = defaultAdapter;
-	      this.stubs.reset();
-	      this.requests.reset();
-	    }
-	
-	    /**
-	    * Stub a response to be used to respond to a request matching a URL or RegExp
-	    *
-	    * @param {String|RegExp} urlOrRegExp A URL or RegExp to test against
-	    * @param {Object} response The response to use when a match is made
-	    */
-	
-	  }, {
-	    key: 'stubRequest',
-	    value: function stubRequest(urlOrRegExp, response) {
-	      this.stubs.track({ url: urlOrRegExp, response: response });
-	    }
-	
-	    /**
-	    * Run a single test with mock adapter installed.
-	    * This will install the mock adapter, execute the function provided,
-	    * then uninstall the mock adapter once complete.
-	    *
-	    * @param {Function} fn The function to be executed
-	    */
-	
-	  }, {
-	    key: 'withMock',
-	    value: function withMock(fn) {
-	      this.install();
-	      try {
-	        fn();
-	      } finally {
-	        this.uninstall();
-	      }
-	    }
-	
-	    /**
-	    * Wait for request to be made before proceding.
-	    * This is naively using a `setTimeout`.
-	    * May need to beef this up a bit in the future.
-	    *
-	    * @param {Function} fn The function to execute once waiting is over
-	    * @param {Number} delay How much time in milliseconds to wait
-	    */
-	
-	  }, {
-	    key: 'wait',
-	    value: function wait(fn) {
-	      var delay = arguments.length <= 1 || arguments[1] === undefined ? this.delay : arguments[1];
-	
-	      setTimeout(fn, delay);
-	    }
-	  }]);
-	
-	  return Moxios;
-	}();
-	
 	var Tracker = function () {
 	  function Tracker() {
 	    _classCallCheck(this, Tracker);
@@ -217,31 +127,72 @@ return /******/ (function(modules) { // webpackBootstrap
 	    this.__items = [];
 	  }
 	
+	  /**
+	   * Reset all the items being tracked
+	   */
+	
+	
 	  _createClass(Tracker, [{
 	    key: 'reset',
 	    value: function reset() {
 	      this.__items.splice(0);
 	    }
+	
+	    /**
+	     * Add an item to be tracked
+	     *
+	     * @param {Object} item An item to be tracked
+	     */
+	
 	  }, {
 	    key: 'track',
 	    value: function track(item) {
 	      this.__items.push(item);
 	    }
+	
+	    /**
+	     * The count of items being tracked
+	     *
+	     * @return {Number}
+	     */
+	
 	  }, {
 	    key: 'count',
 	    value: function count() {
 	      return this.__items.length;
 	    }
+	
+	    /**
+	     * Get an item being tracked at a given index
+	     *
+	     * @param {Number} index The index for the item to retrieve
+	     * @return {Object}
+	     */
+	
 	  }, {
 	    key: 'at',
 	    value: function at(index) {
 	      return this.__items[index];
 	    }
+	
+	    /**
+	     * Get the first item being tracked
+	     *
+	     * @return {Object}
+	     */
+	
 	  }, {
 	    key: 'first',
 	    value: function first() {
 	      return this.at(0);
 	    }
+	
+	    /**
+	     * Get the most recent (last) item being tracked
+	     *
+	     * @return {Object}
+	     */
+	
 	  }, {
 	    key: 'mostRecent',
 	    value: function mostRecent() {
@@ -302,17 +253,8 @@ return /******/ (function(modules) { // webpackBootstrap
 	  _createClass(Request, [{
 	    key: 'respondWith',
 	    value: function respondWith(res) {
-	      var response = {
-	        data: (0, _transformData2.default)(res.responseText || res.response, res.headers, this.config.transformResponse),
-	        status: res.status,
-	        statusText: res.statusText,
-	        headers: res.headers,
-	        config: this.config,
-	        request: this
-	      };
-	
+	      var response = new Response(this, res);
 	      (0, _settle2.default)(this.resolve, this.reject, response);
-	
 	      return new Promise(function (resolve) {
 	        moxios.wait(function () {
 	          resolve(response);
@@ -324,7 +266,91 @@ return /******/ (function(modules) { // webpackBootstrap
 	  return Request;
 	}();
 	
-	var moxios = new Moxios();
+	var Response =
+	/**
+	 * Create a new Response object
+	 *
+	 * @param {Request} req The Request that this Response is associated with
+	 * @param {Object} res The data representing the result of the request
+	 */
+	function Response(req, res) {
+	  _classCallCheck(this, Response);
+	
+	  this.config = req.config;
+	  this.data = (0, _transformData2.default)(res.responseText || res.response, res.headers, this.config.transformResponse);
+	  this.status = res.status;
+	  this.statusText = res.statusText;
+	  this.headers = res.headers;
+	  this.request = req;
+	};
+	
+	var moxios = {
+	  stubs: new Tracker(),
+	  requests: new Tracker(),
+	  delay: DEFAULT_WAIT_DELAY,
+	
+	  /**
+	   * Install the mock adapter for axios
+	   */
+	  install: function install() {
+	    var instance = arguments.length <= 0 || arguments[0] === undefined ? _axios2.default : arguments[0];
+	
+	    defaultAdapter = instance.defaults.adapter;
+	    instance.defaults.adapter = mockAdapter;
+	  },
+	
+	  /**
+	  * Uninstall the mock adapter and reset state
+	  */
+	  uninstall: function uninstall() {
+	    var instance = arguments.length <= 0 || arguments[0] === undefined ? _axios2.default : arguments[0];
+	
+	    instance.defaults.adapter = defaultAdapter;
+	    this.stubs.reset();
+	    this.requests.reset();
+	  },
+	
+	  /**
+	  * Stub a response to be used to respond to a request matching a URL or RegExp
+	  *
+	  * @param {String|RegExp} urlOrRegExp A URL or RegExp to test against
+	  * @param {Object} response The response to use when a match is made
+	  */
+	  stubRequest: function stubRequest(urlOrRegExp, response) {
+	    this.stubs.track({ url: urlOrRegExp, response: response });
+	  },
+	
+	  /**
+	  * Run a single test with mock adapter installed.
+	  * This will install the mock adapter, execute the function provided,
+	  * then uninstall the mock adapter once complete.
+	  *
+	  * @param {Function} fn The function to be executed
+	  */
+	  withMock: function withMock(fn) {
+	    this.install();
+	    try {
+	      fn();
+	    } finally {
+	      this.uninstall();
+	    }
+	  },
+	
+	  /**
+	  * Wait for request to be made before proceding.
+	  * This is naively using a `setTimeout`.
+	  * May need to beef this up a bit in the future.
+	  *
+	  * @param {Function} fn The function to execute once waiting is over
+	  * @param {Number} delay How much time in milliseconds to wait
+	  */
+	  wait: function wait(fn) {
+	    var delay = arguments.length <= 1 || arguments[1] === undefined ? this.delay : arguments[1];
+	
+	    setTimeout(fn, delay);
+	  }
+	};
+	
 	exports.default = moxios;
 
 /***/ },
