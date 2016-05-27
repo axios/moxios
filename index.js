@@ -32,9 +32,10 @@ let mockAdapter = (resolve, reject, config) => {
 }
 
 class Moxios {
-  constructor() {
+  constructor(delay = 100) {
     this.stubs = new Tracker()
     this.requests = new Tracker()
+    this.delay = delay
   }
 
   /**
@@ -86,9 +87,10 @@ class Moxios {
   * May need to beef this up a bit in the future.
   *
   * @param {Function} fn The function to execute once waiting is over
+  * @param {Number} delay How much time in milliseconds to wait
   */
-  wait(fn) {
-    setTimeout(fn)
+  wait(fn, delay = this.delay) {
+    setTimeout(fn, delay)
   }
 }
 
