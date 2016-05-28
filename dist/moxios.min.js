@@ -352,6 +352,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	};
 	
 	exports.default = moxios;
+	module.exports = exports['default'];
 
 /***/ },
 /* 1 */

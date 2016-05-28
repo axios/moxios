@@ -10,6 +10,7 @@ if (process.env.MINIFY) {
 }
 
 module.exports = {
+  devtool: 'source-map',
   entry: './index.js',
   output: {
     filename: 'dist/' + fileName + '.js',
@@ -23,7 +24,8 @@ module.exports = {
         exclude: /node_modules/,
         loader: 'babel',
         query: {
-          presets: ['es2015']
+          presets: ['es2015'],
+          plugins: ['add-module-exports']
         }
       }
     ]
