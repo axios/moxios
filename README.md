@@ -1,6 +1,6 @@
 # moxios [![build status](https://img.shields.io/travis/mzabriskie/moxios.svg?style=flat-square)](https://travis-ci.org/mzabriskie/moxios)
 
-Mock axios requests for testing
+Mock [axios](https://github.com/mzabriskie/axios) requests for testing
 
 ## Installing
 
