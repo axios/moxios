@@ -17,6 +17,9 @@ module.exports = {
     library: 'moxios',
     libraryTarget: 'umd'
   },
+  externals: {
+    'axios': 'axios'
+  },
   module: {
     loaders: [
       {
