@@ -1,10 +1,9 @@
 import axios from 'axios'
 import buildURL from 'axios/lib/helpers/buildURL'
-import transformData from 'axios/lib/helpers/transformData'
 import isURLSameOrigin from 'axios/lib/helpers/isURLSameOrigin'
 import btoa from 'axios/lib/helpers/btoa'
 import cookies from 'axios/lib/helpers/cookies'
-import settle from 'axios/lib/helpers/settle'
+import settle from 'axios/lib/core/settle'
 
 const DEFAULT_WAIT_DELAY = 100
 
@@ -18,19 +17,21 @@ let defaultAdapter
  * @param {Function} reject The function to call when Promise is rejected
  * @param {Object} config The config object to be used for the request
  */
-let mockAdapter = (resolve, reject, config) => {
-  let request = new Request(resolve, reject, config)
-  moxios.requests.track(request)
+let mockAdapter = (config) => {
+  return new Promise(function (resolve, reject) {
+    let request = new Request(resolve, reject, config)
+    moxios.requests.track(request)
 
-  // Check for matching stub to auto respond with
-  for (let i=0, l=moxios.stubs.count(); i<l; i++) {
-    let stub = moxios.stubs.at(i)
-    if (stub.url === request.url ||
-        stub.url instanceof RegExp && stub.url.test(request.url)) {
-      request.respondWith(stub.response)
-      break
+    // Check for matching stub to auto respond with
+    for (let i=0, l=moxios.stubs.count(); i<l; i++) {
+      let stub = moxios.stubs.at(i)
+      if (stub.url === request.url ||
+          stub.url instanceof RegExp && stub.url.test(request.url)) {
+        request.respondWith(stub.response)
+        break
+      }
     }
-  }
+  });
 }
 
 class Tracker {
@@ -156,11 +157,7 @@ class Response {
    */
   constructor(req, res) {
     this.config = req.config
-    this.data = transformData(
-      res.responseText || res.response,
-      res.headers,
-      this.config.transformResponse
-    )
+    this.data = res.responseText || res.response;
     this.status = res.status
     this.statusText = res.statusText
     this.headers = res.headers
