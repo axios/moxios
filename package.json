@@ -1,6 +1,6 @@
 {
   "name": "moxios",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Mock axios requests for testing",
   "main": "dist/moxios.js",
   "scripts": {

@@ -70,10 +70,6 @@ return /******/ (function(modules) { // webpackBootstrap
 	
 	var _buildURL2 = _interopRequireDefault(_buildURL);
 	
-	var _transformData = __webpack_require__(4);
-	
-	var _transformData2 = _interopRequireDefault(_transformData);
-	
 	var _isURLSameOrigin = __webpack_require__(5);
 	
 	var _isURLSameOrigin2 = _interopRequireDefault(_isURLSameOrigin);
@@ -106,18 +102,20 @@ return /******/ (function(modules) { // webpackBootstrap
 	 * @param {Function} reject The function to call when Promise is rejected
 	 * @param {Object} config The config object to be used for the request
 	 */
-	var mockAdapter = function mockAdapter(resolve, reject, config) {
-	  var request = new Request(resolve, reject, config);
-	  moxios.requests.track(request);
+	var mockAdapter = function mockAdapter(config) {
+	  return new Promise(function (resolve, reject) {
+	    var request = new Request(resolve, reject, config);
+	    moxios.requests.track(request);
 	
-	  // Check for matching stub to auto respond with
-	  for (var i = 0, l = moxios.stubs.count(); i < l; i++) {
-	    var stub = moxios.stubs.at(i);
-	    if (stub.url === request.url || stub.url instanceof RegExp && stub.url.test(request.url)) {
-	      request.respondWith(stub.response);
-	      break;
+	    // Check for matching stub to auto respond with
+	    for (var i = 0, l = moxios.stubs.count(); i < l; i++) {
+	      var stub = moxios.stubs.at(i);
+	      if (stub.url === request.url || stub.url instanceof RegExp && stub.url.test(request.url)) {
+	        request.respondWith(stub.response);
+	        break;
+	      }
 	    }
-	  }
+	  });
 	};
 	
 	var Tracker = function () {
@@ -277,7 +275,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	  _classCallCheck(this, Response);
 	
 	  this.config = req.config;
-	  this.data = (0, _transformData2.default)(res.responseText || res.response, res.headers, this.config.transformResponse);
+	  this.data = res.responseText || res.response;
 	  this.status = res.status;
 	  this.statusText = res.statusText;
 	  this.headers = res.headers;
@@ -436,9 +434,11 @@ return /******/ (function(modules) { // webpackBootstrap
 
 /***/ },
 /* 3 */
-/***/ function(module, exports) {
+/***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
+	
+	var bind = __webpack_require__(4);
 	
 	/*global toString:true*/
 	
@@ -695,6 +695,25 @@ return /******/ (function(modules) { // webpackBootstrap
 	  return result;
 	}
 	
+	/**
+	 * Extends object a by mutably adding to it the properties of object b.
+	 *
+	 * @param {Object} a The object to be extended
+	 * @param {Object} b The object to copy properties from
+	 * @param {Object} thisArg The object to bind function to
+	 * @return {Object} The resulting value of object a
+	 */
+	function extend(a, b, thisArg) {
+	  forEach(b, function assignValue(val, key) {
+	    if (thisArg && typeof val === 'function') {
+	      a[key] = bind(val, thisArg);
+	    } else {
+	      a[key] = val;
+	    }
+	  });
+	  return a;
+	}
+	
 	module.exports = {
 	  isArray: isArray,
 	  isArrayBuffer: isArrayBuffer,
@@ -713,33 +732,25 @@ return /******/ (function(modules) { // webpackBootstrap
 	  isStandardBrowserEnv: isStandardBrowserEnv,
 	  forEach: forEach,
 	  merge: merge,
+	  extend: extend,
 	  trim: trim
 	};
 
 
 /***/ },
 /* 4 */
-/***/ function(module, exports, __webpack_require__) {
+/***/ function(module, exports) {
 
 	'use strict';
 	
-	var utils = __webpack_require__(3);
-	
-	/**
-	 * Transform the data for a request or a response
-	 *
-	 * @param {Object|String} data The data to be transformed
-	 * @param {Array} headers The headers for the request or response
-	 * @param {Array|Function} fns A single function or Array of functions
-	 * @returns {*} The resulting transformed data
-	 */
-	module.exports = function transformData(data, headers, fns) {
-	  /*eslint no-param-reassign:0*/
-	  utils.forEach(fns, function transform(fn) {
-	    data = fn(data, headers);
-	  });
-	
-	  return data;
+	module.exports = function bind(fn, thisArg) {
+	  return function wrap() {
+	    var args = new Array(arguments.length);
+	    for (var i = 0; i < args.length; i++) {
+	      args[i] = arguments[i];
+	    }
+	    return fn.apply(thisArg, args);
+	  };
 	};
 
 
@@ -920,9 +931,11 @@ return /******/ (function(modules) { // webpackBootstrap
 
 /***/ },
 /* 8 */
-/***/ function(module, exports) {
+/***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
+	
+	var createError = __webpack_require__(9);
 	
 	/**
 	 * Resolve or reject a Promise based on response status.
@@ -937,8 +950,61 @@ return /******/ (function(modules) { // webpackBootstrap
 	  if (!response.status || !validateStatus || validateStatus(response.status)) {
 	    resolve(response);
 	  } else {
-	    reject(response);
+	    reject(createError(
+	      'Request failed with status code ' + response.status,
+	      response.config,
+	      null,
+	      response
+	    ));
 	  }
+	};
+
+
+/***/ },
+/* 9 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+	
+	var enhanceError = __webpack_require__(10);
+	
+	/**
+	 * Create an Error with the specified message, config, error code, and response.
+	 *
+	 * @param {string} message The error message.
+	 * @param {Object} config The config.
+	 * @param {string} [code] The error code (for example, 'ECONNABORTED').
+	 @ @param {Object} [response] The response.
+	 * @returns {Error} The created error.
+	 */
+	module.exports = function createError(message, config, code, response) {
+	  var error = new Error(message);
+	  return enhanceError(error, config, code, response);
+	};
+
+
+/***/ },
+/* 10 */
+/***/ function(module, exports) {
+
+	'use strict';
+	
+	/**
+	 * Update an Error with the specified config, error code, and response.
+	 *
+	 * @param {Error} error The error to update.
+	 * @param {Object} config The config.
+	 * @param {string} [code] The error code (for example, 'ECONNABORTED').
+	 @ @param {Object} [response] The response.
+	 * @returns {Error} The error.
+	 */
+	module.exports = function enhanceError(error, config, code, response) {
+	  error.config = config;
+	  if (code) {
+	    error.code = code;
+	  }
+	  error.response = response;
+	  return error;
 	};
 
 
