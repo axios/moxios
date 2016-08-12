@@ -128,5 +128,31 @@ describe('moxios', function () {
         done()
       })
     })
+
+    describe('wait', function(){
+      let timeSpy
+
+      beforeEach(function(){
+        timeSpy = sinon.spy(global, 'setTimeout');
+      })
+
+      afterEach(function(){
+        global.setTimeout.restore();
+      })
+
+      it('should return promise if wait cb is omitted', function (done) {
+        moxios.wait().then(() => {
+          equal(timeSpy.calledWith(sinon.match.any, moxios.delay), true);
+          done();
+        })
+      })
+
+      it('should return resolved promise after specified delay if no cb', function (done) {
+        moxios.wait(33).then(() => {
+          equal(timeSpy.calledWith(sinon.match.any, 33), true);
+          done();
+        })
+      })
+    })
   })
 })

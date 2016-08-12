@@ -221,8 +221,18 @@ let moxios = {
   * @param {Function} fn The function to execute once waiting is over
   * @param {Number} delay How much time in milliseconds to wait
   */
-  wait: function(fn, delay = this.delay) {
-    setTimeout(fn, delay)
+  wait: function(...args) {
+    let cb = typeof args[0] === 'function' ? args.shift() : null
+    let delay = typeof args[0] !== 'undefined' ? args.shift() : this.delay
+    let promise = new Promise(resolve => {
+      setTimeout(resolve, delay)
+    });
+
+    if(cb){
+      promise.then(cb)
+    }
+
+    return promise;
   }
 }
 
