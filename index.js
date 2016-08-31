@@ -4,6 +4,7 @@ import isURLSameOrigin from 'axios/lib/helpers/isURLSameOrigin'
 import btoa from 'axios/lib/helpers/btoa'
 import cookies from 'axios/lib/helpers/cookies'
 import settle from 'axios/lib/core/settle'
+import createError from 'axios/lib/core/createError'
 
 const DEFAULT_WAIT_DELAY = 100
 
@@ -27,11 +28,32 @@ let mockAdapter = (config) => {
       let stub = moxios.stubs.at(i)
       if (stub.url === request.url ||
           stub.url instanceof RegExp && stub.url.test(request.url)) {
-        request.respondWith(stub.response)
-        break
+          if (stub.timeout) {
+            throwTimeout(config)
+          }
+          request.respondWith(stub.response)
+          break
       }
     }
   });
+}
+
+/**
+ * create common object for timeout response
+ *
+ * @param {object} config The config object to be used for the request
+ */
+let createTimeout = (config) => {
+  return createError('timeout of ' + config.timeout + 'ms exceeded', config, 'ECONNABORTED')
+}
+
+/**
+ * throw common error for timeout response
+ *
+ * @param {object} config The config object to be used for the request
+ */
+let throwTimeout = (config) => {
+  throw createTimeout(config)
 }
 
 class Tracker {
@@ -132,6 +154,21 @@ class Request {
   }
 
   /**
+   * Respond to this request with a timeout result
+   *
+   * @return {Promise} A Promise that rejects with a timeout result
+   */
+  respondWithTimeout() {
+    let response = new Response(this, createTimeout(this.config))
+    settle(this.resolve, this.reject, response)
+    return new Promise(function(resolve, reject) {
+      moxios.wait(function() {
+        reject(response)
+      })
+    })
+  }
+
+  /**
    * Respond to this request with a specified result
    *
    * @param {Object} res The data representing the result of the request
@@ -162,6 +199,7 @@ class Response {
     this.statusText = res.statusText
     this.headers = res.headers
     this.request = req
+    this.code = res.code
   }
 }
 
@@ -197,6 +235,16 @@ let moxios = {
     this.stubs.track({url: urlOrRegExp, response})
   },
 
+  /**
+  * Stub a timeout to be used to respond to a request matching a URL or RegExp
+  *
+  * @param {String|RegExp} urlOrRegExp A URL or RegExp to test against
+  */
+  stubTimeout: function(urlOrRegExp) {
+    this.stubs.track({url: urlOrRegExp, timeout: true})
+  },
+
+  /**
   /**
   * Run a single test with mock adapter installed.
   * This will install the mock adapter, execute the function provided,

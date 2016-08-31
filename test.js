@@ -99,6 +99,23 @@ describe('moxios', function () {
       })
     })
 
+    it('should timeout requests one time', function(done) {
+
+      moxios.uninstall()
+
+      moxios.withMock(function() {
+        axios.get('/users/12345')
+
+        moxios.wait(function() {
+          let request = moxios.requests.mostRecent()
+          request.respondWithTimeout().catch(function(err) {
+            equal(err.code, 'ECONNABORTED')
+            done()
+          })
+        })
+      })
+    })
+
     it('should stub requests', function (done) {
       moxios.stubRequest('/users/12345', {
         status: 200,
@@ -110,6 +127,18 @@ describe('moxios', function () {
       moxios.wait(function () {
         let response = onFulfilled.getCall(0).args[0]
         deepEqual(response.data, USER_FRED)
+        done()
+      })
+    })
+
+    it('should stub timeout', function (done) {
+      moxios.stubTimeout('/users/12345')
+
+      axios.get('/users/12345').catch(onRejected)
+
+      moxios.wait(function () {
+        let err = onRejected.getCall(0).args[0]
+        deepEqual(err.code, 'ECONNABORTED')
         done()
       })
     })
