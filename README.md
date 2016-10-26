@@ -21,10 +21,12 @@ describe('mocking axios requests', function () {
   describe('across entire suite', function () {
 
     beforeEach(function () {
+      // import and pass your custom axios instance to this method
       moxios.install()
     })
 
     afterEach(function () {
+      // import and pass your custom axios instance to this method
       moxios.uninstall()
     })
 
