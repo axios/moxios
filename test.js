@@ -157,5 +157,146 @@ describe('moxios', function () {
         done()
       })
     })
+
+    describe('stubs', function () {
+      it('should track multiple stub requests', function () {
+        moxios.stubOnce('PUT', '/users/12345', {
+          status: 204
+        })
+
+        moxios.stubOnce('GET', '/users/12346', {
+          status: 200,
+          response: USER_FRED
+        })
+
+        equal(moxios.stubs.count(), 2)
+      })
+
+      it('should find single stub by method', function () {
+        moxios.stubOnce('PUT', '/users/12345', {
+          status: 204
+        })
+
+        moxios.stubOnce('GET', '/users/12346', {
+          status: 200,
+          response: USER_FRED
+        })
+
+        let request = moxios.stubs.get('PUT', '/users/12345')
+
+        notEqual(request, undefined)
+      })
+
+      it('should remove a single stub by method', function () {
+        moxios.stubOnce('PUT', '/users/12346', {
+          status: 204
+        })
+
+        moxios.stubOnce('GET', '/users/12346', {
+          status: 200,
+          response: USER_FRED
+        })
+
+        moxios.stubOnce('PUT', '/users/12345', {
+          status: 204
+        })
+
+        moxios.stubOnce('GET', '/users/12345', {
+          status: 200,
+          response: USER_FRED
+        })
+
+        moxios.stubs.remove('PUT', '/users/12345')
+        equal(moxios.stubs.count(), 3)
+      })
+
+      it('should not find stub with invalid method', function () {
+        moxios.stubOnce('PUT', '/users/12345', {
+          status: 204
+        })
+
+        moxios.stubOnce('GET', '/users/12346', {
+          status: 200,
+          response: USER_FRED
+        })
+
+        let request = moxios.stubs.get('GET', '/users/12345')
+
+        equal(request, undefined)
+      })
+
+      it('should not find request on invalid method', function () {
+        moxios.stubOnce('PUT', '/users/12345', {
+          status: 204
+        })
+
+        moxios.stubOnce('GET', '/users/12346', {
+          status: 200,
+          response: USER_FRED
+        })
+
+        axios.put('/users/12346', USER_FRED)
+        let request = moxios.requests.get('TEST')
+
+        equal(request, undefined)
+      })
+
+      it('should find request after multiple stubs using same URI', function (done) {
+        moxios.stubOnce('POST', '/users/12345', {
+          status: 204
+        })
+
+        moxios.stubOnce('PUT', '/users/12345', {
+          status: 204
+        })
+
+        moxios.stubOnce('GET', '/users/12345', {
+          status: 200,
+          response: USER_FRED
+        })
+
+        axios.put('/users/12345', USER_FRED).then(onFulfilled)
+
+        moxios.wait(function () {
+          let response = onFulfilled.getCall(0).args[0]
+          equal(response.status, 204)
+          let request = moxios.requests.get('PUT', '/users/12345')
+          notEqual(request, undefined)
+          done()
+        })
+      })
+
+      it('Should stub and find multiple requests by method', function (done) {
+        moxios.stubOnce('PUT', '/users/12345', {
+          status: 204
+        })
+
+        moxios.stubOnce('GET', '/users/12346', {
+          status: 200,
+          response: USER_FRED
+        })
+
+        axios.put('/users/12345', USER_FRED).then(onFulfilled)
+        axios.get('/users/12346', {}).then(onFulfilled)
+
+        moxios.wait(function () {
+          equal(onFulfilled.calledTwice, true)
+
+          let response1 = onFulfilled.getCall(0).args[0]
+          let response2 = onFulfilled.getCall(1).args[0]
+          equal(response1.status, 204)
+          equal(response2.status, 200)
+          equal(response2.data.firstName, 'Fred')
+
+          let request = moxios.requests.get('PUT', '/users/12345');
+          notEqual(request, undefined)
+
+          request = moxios.requests.get('GET', '/users/12346');
+          notEqual(request, undefined)
+
+          done()
+        })
+      })
+    })
   })
 })
