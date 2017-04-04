@@ -197,6 +197,15 @@ class Response {
     this.data = res.responseText || res.response;
     this.status = res.status
     this.statusText = res.statusText
+    
+    /* lowecase all headers keys to be consistent with Axios */
+    if ('headers' in res) {
+      let newHeaders = {};
+      for (let header in res.headers) {
+        newHeaders[header.toLowerCase()] = res.headers[header];
+      }
+      res.headers = newHeaders;
+    }
     this.headers = res.headers
     this.request = req
     this.code = res.code
