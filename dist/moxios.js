@@ -86,10 +86,15 @@ return /******/ (function(modules) { // webpackBootstrap
 	
 	var _settle2 = _interopRequireDefault(_settle);
 	
+	var _createError = __webpack_require__(9);
+	
+	var _createError2 = _interopRequireDefault(_createError);
+	
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 	
 	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 	
+	var TimeoutException = new Error('Timeout: Stub function not called.');
 	var DEFAULT_WAIT_DELAY = 100;
 	
 	// The default adapter
@@ -110,12 +115,41 @@ return /******/ (function(modules) { // webpackBootstrap
 	    // Check for matching stub to auto respond with
 	    for (var i = 0, l = moxios.stubs.count(); i < l; i++) {
 	      var stub = moxios.stubs.at(i);
-	      if (stub.url === request.url || stub.url instanceof RegExp && stub.url.test(request.url)) {
+	      var correctURL = stub.url instanceof RegExp ? stub.url.test(request.url) : stub.url === request.url;
+	      var correctMethod = true;
+	
+	      if (stub.method !== undefined) {
+	        correctMethod = stub.method.toLowerCase() === request.config.method.toLowerCase();
+	      }
+	
+	      if (correctURL && correctMethod) {
+	        if (stub.timeout) {
+	          throwTimeout(config);
+	        }
 	        request.respondWith(stub.response);
+	        stub.resolve();
 	        break;
 	      }
 	    }
 	  });
+	};
+	
+	/**
+	 * create common object for timeout response
+	 *
+	 * @param {object} config The config object to be used for the request
+	 */
+	var createTimeout = function createTimeout(config) {
+	  return (0, _createError2.default)('timeout of ' + config.timeout + 'ms exceeded', config, 'ECONNABORTED');
+	};
+	
+	/**
+	 * throw common error for timeout response
+	 *
+	 * @param {object} config The config object to be used for the request
+	 */
+	var throwTimeout = function throwTimeout(config) {
+	  throw createTimeout(config);
 	};
 	
 	var Tracker = function () {
@@ -196,6 +230,78 @@ return /******/ (function(modules) { // webpackBootstrap
 	    value: function mostRecent() {
 	      return this.at(this.count() - 1);
 	    }
+	
+	    /**
+	     * Dump the items being tracked to the console.
+	     */
+	
+	  }, {
+	    key: 'debug',
+	    value: function debug() {
+	      console.log();
+	      this.__items.forEach(function (element) {
+	        var output = void 0;
+	
+	        if (element.config) {
+	          // request
+	          output = element.config.method.toLowerCase() + ', ';
+	          output += element.config.url;
+	        } else {
+	          // stub
+	          output = element.method.toLowerCase() + ', ';
+	          output += element.url + ', ';
+	          output += element.response.status + ', ';
+	
+	          if (element.response.response) {
+	            output += JSON.stringify(element.response.response);
+	          } else {
+	            output += '{}';
+	          }
+	        }
+	        console.log(output);
+	      });
+	    }
+	
+	    /**
+	     * Find and return element given the HTTP method and the URL.
+	     */
+	
+	  }, {
+	    key: 'get',
+	    value: function get(method, url) {
+	      function getElem(element, index, array) {
+	        var matchedUrl = element.url instanceof RegExp ? element.url.test(element.url) : element.url === url;
+	        var matchedMethod = void 0;
+	
+	        if (element.config) {
+	          // request tracking
+	          matchedMethod = method.toLowerCase() === element.config.method.toLowerCase();
+	        } else {
+	          // stub tracking
+	          matchedMethod = method.toLowerCase() === element.method.toLowerCase();
+	        }
+	
+	        if (matchedUrl && matchedMethod) {
+	          return element;
+	        }
+	      }
+	
+	      return this.__items.find(getElem);
+	    }
+	
+	    /**
+	     * Stop an element from being tracked by removing it. Finds and returns the element,
+	     * given the HTTP method and the URL.
+	     */
+	
+	  }, {
+	    key: 'remove',
+	    value: function remove(method, url) {
+	      var elem = this.get(method, url);
+	      var index = this.__items.indexOf(elem);
+	
+	      return this.__items.splice(index, 1)[0];
+	    }
 	  }]);
 	
 	  return Tracker;
@@ -241,14 +347,32 @@ return /******/ (function(modules) { // webpackBootstrap
 	  }
 	
 	  /**
-	   * Respond to this request with a specified result
+	   * Respond to this request with a timeout result
 	   *
-	   * @param {Object} res The data representing the result of the request
-	   * @return {Promise} A Promise that resolves once the response is ready
+	   * @return {Promise} A Promise that rejects with a timeout result
 	   */
 	
 	
 	  _createClass(Request, [{
+	    key: 'respondWithTimeout',
+	    value: function respondWithTimeout() {
+	      var response = new Response(this, createTimeout(this.config));
+	      (0, _settle2.default)(this.resolve, this.reject, response);
+	      return new Promise(function (resolve, reject) {
+	        moxios.wait(function () {
+	          reject(response);
+	        });
+	      });
+	    }
+	
+	    /**
+	     * Respond to this request with a specified result
+	     *
+	     * @param {Object} res The data representing the result of the request
+	     * @return {Promise} A Promise that resolves once the response is ready
+	     */
+	
+	  }, {
 	    key: 'respondWith',
 	    value: function respondWith(res) {
 	      var response = new Response(this, res);
@@ -278,14 +402,25 @@ return /******/ (function(modules) { // webpackBootstrap
 	  this.data = res.responseText || res.response;
 	  this.status = res.status;
 	  this.statusText = res.statusText;
+	
+	  /* lowecase all headers keys to be consistent with Axios */
+	  if ('headers' in res) {
+	    var newHeaders = {};
+	    for (var header in res.headers) {
+	      newHeaders[header.toLowerCase()] = res.headers[header];
+	    }
+	    res.headers = newHeaders;
+	  }
 	  this.headers = res.headers;
 	  this.request = req;
+	  this.code = res.code;
 	};
 	
 	var moxios = {
 	  stubs: new Tracker(),
 	  requests: new Tracker(),
 	  delay: DEFAULT_WAIT_DELAY,
+	  timeoutException: TimeoutException,
 	
 	  /**
 	   * Install the mock adapter for axios
@@ -298,8 +433,8 @@ return /******/ (function(modules) { // webpackBootstrap
 	  },
 	
 	  /**
-	  * Uninstall the mock adapter and reset state
-	  */
+	   * Uninstall the mock adapter and reset state
+	   */
 	  uninstall: function uninstall() {
 	    var instance = arguments.length <= 0 || arguments[0] === undefined ? _axios2.default : arguments[0];
 	
@@ -309,22 +444,68 @@ return /******/ (function(modules) { // webpackBootstrap
 	  },
 	
 	  /**
-	  * Stub a response to be used to respond to a request matching a URL or RegExp
-	  *
-	  * @param {String|RegExp} urlOrRegExp A URL or RegExp to test against
-	  * @param {Object} response The response to use when a match is made
-	  */
+	   * Stub a response to be used to respond to a request matching a method and a URL or RegExp
+	   *
+	   * @param {String} method An axios command
+	   * @param {String|RegExp} urlOrRegExp A URL or RegExp to test against
+	   * @param {Object} response The response to use when a match is made
+	   */
 	  stubRequest: function stubRequest(urlOrRegExp, response) {
 	    this.stubs.track({ url: urlOrRegExp, response: response });
 	  },
 	
 	  /**
-	  * Run a single test with mock adapter installed.
-	  * This will install the mock adapter, execute the function provided,
-	  * then uninstall the mock adapter once complete.
-	  *
-	  * @param {Function} fn The function to be executed
-	  */
+	   * Stub a response to be used one or more times to respond to a request matching a
+	   * method and a URL or RegExp.
+	   *
+	   * @param {String} method An axios command
+	   * @param {String|RegExp} urlOrRegExp A URL or RegExp to test against
+	   * @param {Object} response The response to use when a match is made
+	   */
+	  stubOnce: function stubOnce(method, urlOrRegExp, response) {
+	    var _this = this;
+	
+	    return new Promise(function (resolve) {
+	      _this.stubs.track({ url: urlOrRegExp, method: method, response: response, resolve: resolve });
+	    });
+	  },
+	
+	  /**
+	   * Stub a timed response to a request matching a method and a URL or RegExp. If
+	   * timer fires, reject with a TimeoutException for simple assertions. The goal is
+	   * to show that a certain request was not made.
+	   *
+	   * @param {String} method An axios command
+	   * @param {String|RegExp} urlOrRegExp A URL or RegExp to test against
+	   * @param {Object} response The response to use when a match is made
+	   */
+	  stubFailure: function stubFailure(method, urlOrRegExp, response) {
+	    var _this2 = this;
+	
+	    return new Promise(function (resolve, reject) {
+	      _this2.stubs.track({ url: urlOrRegExp, method: method, response: response, resolve: resolve });
+	      setTimeout(function () {
+	        reject(TimeoutException);
+	      }, 500);
+	    });
+	  },
+	
+	  /**
+	   * Stub a timeout to be used to respond to a request matching a URL or RegExp
+	   *
+	   * @param {String|RegExp} urlOrRegExp A URL or RegExp to test against
+	   */
+	  stubTimeout: function stubTimeout(urlOrRegExp) {
+	    this.stubs.track({ url: urlOrRegExp, timeout: true });
+	  },
+	
+	  /**
+	   * Run a single test with mock adapter installed.
+	   * This will install the mock adapter, execute the function provided,
+	   * then uninstall the mock adapter once complete.
+	   *
+	   * @param {Function} fn The function to be executed
+	   */
 	  withMock: function withMock(fn) {
 	    this.install();
 	    try {
@@ -335,13 +516,13 @@ return /******/ (function(modules) { // webpackBootstrap
 	  },
 	
 	  /**
-	  * Wait for request to be made before proceding.
-	  * This is naively using a `setTimeout`.
-	  * May need to beef this up a bit in the future.
-	  *
-	  * @param {Function} fn The function to execute once waiting is over
-	  * @param {Number} delay How much time in milliseconds to wait
-	  */
+	   * Wait for request to be made before proceding.
+	   * This is naively using a `setTimeout`.
+	   * May need to beef this up a bit in the future.
+	   *
+	   * @param {Function} fn The function to execute once waiting is over
+	   * @param {Number} delay How much time in milliseconds to wait
+	   */
 	  wait: function wait(fn) {
 	    var delay = arguments.length <= 1 || arguments[1] === undefined ? this.delay : arguments[1];
 	
