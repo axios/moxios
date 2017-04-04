@@ -6,6 +6,7 @@ import cookies from 'axios/lib/helpers/cookies'
 import settle from 'axios/lib/core/settle'
 import createError from 'axios/lib/core/createError'
 
+const TimeoutException = new Error('Timeout: Stub function not called.')
 const DEFAULT_WAIT_DELAY = 100
 
 // The default adapter
@@ -26,13 +27,20 @@ let mockAdapter = (config) => {
     // Check for matching stub to auto respond with
     for (let i=0, l=moxios.stubs.count(); i<l; i++) {
       let stub = moxios.stubs.at(i)
-      if (stub.url === request.url ||
-          stub.url instanceof RegExp && stub.url.test(request.url)) {
-          if (stub.timeout) {
-            throwTimeout(config)
-          }
-          request.respondWith(stub.response)
-          break
+      let correctURL = stub.url instanceof RegExp ? stub.url.test(request.url) : stub.url === request.url;
+      let correctMethod = true;
+
+      if (stub.method !== undefined) {
+        correctMethod = stub.method.toLowerCase() === request.config.method.toLowerCase();
+      }
+
+      if (correctURL && correctMethod) {
+        if (stub.timeout) {
+          throwTimeout(config)
+        }
+        request.respondWith(stub.response)
+        stub.resolve()
+        break
       }
     }
   });
@@ -76,7 +84,7 @@ class Tracker {
   track(item) {
     this.__items.push(item)
   }
-  
+
   /**
    * The count of items being tracked
    *
@@ -95,7 +103,7 @@ class Tracker {
   at(index) {
     return this.__items[index]
   }
-  
+
   /**
    * Get the first item being tracked
    *
@@ -112,6 +120,69 @@ class Tracker {
    */
   mostRecent() {
     return this.at(this.count() - 1)
+  }
+
+  /**
+   * Dump the items being tracked to the console.
+   */
+  debug() {
+    console.log();
+    this.__items.forEach((element) => {
+      let output;
+
+      if (element.config) {
+        // request
+        output = element.config.method.toLowerCase() + ', ';
+        output += element.config.url;
+      } else {
+        // stub
+        output = element.method.toLowerCase() + ', ';
+        output += element.url + ', ';
+        output += element.response.status + ', ';
+
+        if (element.response.response) {
+          output += JSON.stringify(element.response.response);
+        } else {
+          output += '{}';
+        }
+      }
+      console.log(output);
+    });
+  }
+
+  /**
+   * Find and return element given the HTTP method and the URL.
+   */
+  get(method, url) {
+    function getElem (element, index, array) {
+      let matchedUrl = element.url instanceof RegExp ? element.url.test(element.url) : element.url === url;
+      let matchedMethod;
+
+      if (element.config) {
+        // request tracking
+        matchedMethod = method.toLowerCase() === element.config.method.toLowerCase();
+      } else {
+        // stub tracking
+        matchedMethod = method.toLowerCase() === element.method.toLowerCase();
+      }
+
+      if (matchedUrl && matchedMethod) {
+        return element;
+      }
+    }
+
+    return this.__items.find(getElem);
+  }
+
+  /**
+   * Stop an element from being tracked by removing it. Finds and returns the element,
+   * given the HTTP method and the URL.
+   */
+  remove(method, url) {
+    let elem = this.get(method, url);
+    let index = this.__items.indexOf(elem);
+
+    return this.__items.splice(index, 1)[0];
   }
 }
 
@@ -216,6 +287,7 @@ let moxios = {
   stubs: new Tracker(),
   requests: new Tracker(),
   delay: DEFAULT_WAIT_DELAY,
+  timeoutException: TimeoutException,
 
   /**
    * Install the mock adapter for axios
@@ -226,8 +298,8 @@ let moxios = {
   },
 
   /**
-  * Uninstall the mock adapter and reset state
-  */
+   * Uninstall the mock adapter and reset state
+   */
   uninstall: function(instance = axios) {
     instance.defaults.adapter = defaultAdapter
     this.stubs.reset()
@@ -235,32 +307,64 @@ let moxios = {
   },
 
   /**
-  * Stub a response to be used to respond to a request matching a URL or RegExp
-  *
-  * @param {String|RegExp} urlOrRegExp A URL or RegExp to test against
-  * @param {Object} response The response to use when a match is made
-  */
-  stubRequest: function(urlOrRegExp, response) {
-    this.stubs.track({url: urlOrRegExp, response})
+   * Stub a response to be used to respond to a request matching a method and a URL or RegExp
+   *
+   * @param {String} method An axios command
+   * @param {String|RegExp} urlOrRegExp A URL or RegExp to test against
+   * @param {Object} response The response to use when a match is made
+   */
+  stubRequest: function (urlOrRegExp, response) {
+    this.stubs.track({url: urlOrRegExp, response});
   },
 
   /**
-  * Stub a timeout to be used to respond to a request matching a URL or RegExp
-  *
-  * @param {String|RegExp} urlOrRegExp A URL or RegExp to test against
-  */
+   * Stub a response to be used one or more times to respond to a request matching a
+   * method and a URL or RegExp.
+   *
+   * @param {String} method An axios command
+   * @param {String|RegExp} urlOrRegExp A URL or RegExp to test against
+   * @param {Object} response The response to use when a match is made
+   */
+  stubOnce: function (method, urlOrRegExp, response) {
+    return new Promise((resolve) => {
+      this.stubs.track({url: urlOrRegExp, method, response, resolve});
+    });
+  },
+
+  /**
+   * Stub a timed response to a request matching a method and a URL or RegExp. If
+   * timer fires, reject with a TimeoutException for simple assertions. The goal is
+   * to show that a certain request was not made.
+   *
+   * @param {String} method An axios command
+   * @param {String|RegExp} urlOrRegExp A URL or RegExp to test against
+   * @param {Object} response The response to use when a match is made
+   */
+  stubFailure: function (method, urlOrRegExp, response) {
+    return new Promise((resolve, reject) => {
+      this.stubs.track({url: urlOrRegExp, method, response, resolve});
+      setTimeout(function() {
+        reject(TimeoutException);
+      }, 500);
+    });
+  },
+
+  /**
+   * Stub a timeout to be used to respond to a request matching a URL or RegExp
+   *
+   * @param {String|RegExp} urlOrRegExp A URL or RegExp to test against
+   */
   stubTimeout: function(urlOrRegExp) {
     this.stubs.track({url: urlOrRegExp, timeout: true})
   },
 
   /**
-  /**
-  * Run a single test with mock adapter installed.
-  * This will install the mock adapter, execute the function provided,
-  * then uninstall the mock adapter once complete.
-  *
-  * @param {Function} fn The function to be executed
-  */
+   * Run a single test with mock adapter installed.
+   * This will install the mock adapter, execute the function provided,
+   * then uninstall the mock adapter once complete.
+   *
+   * @param {Function} fn The function to be executed
+   */
   withMock: function(fn) {
     this.install()
     try {
@@ -271,17 +375,16 @@ let moxios = {
   },
 
   /**
-  * Wait for request to be made before proceding.
-  * This is naively using a `setTimeout`.
-  * May need to beef this up a bit in the future.
-  *
-  * @param {Function} fn The function to execute once waiting is over
-  * @param {Number} delay How much time in milliseconds to wait
-  */
+   * Wait for request to be made before proceding.
+   * This is naively using a `setTimeout`.
+   * May need to beef this up a bit in the future.
+   *
+   * @param {Function} fn The function to execute once waiting is over
+   * @param {Number} delay How much time in milliseconds to wait
+   */
   wait: function(fn, delay = this.delay) {
     setTimeout(fn, delay)
   }
 }
-
 
 export default moxios
