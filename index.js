@@ -23,11 +23,13 @@ let mockAdapter = (config) => {
   return new Promise(function (resolve, reject) {
     let request = new Request(resolve, reject, config)
     moxios.requests.track(request)
+    const hasBaseUrl = config && config.baseURL && true
 
     // Check for matching stub to auto respond with
     for (let i=0, l=moxios.stubs.count(); i<l; i++) {
       let stub = moxios.stubs.at(i)
-      let correctURL = stub.url instanceof RegExp ? stub.url.test(request.url) : stub.url === request.url;
+      const url = hasBaseUrl ? config.baseURL + stub.url : stub.url
+      let correctURL = stub.url instanceof RegExp ? stub.url.test(request.url) : url === request.url;
       let correctMethod = true;
 
       if (stub.method !== undefined) {
