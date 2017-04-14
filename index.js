@@ -38,7 +38,11 @@ let mockAdapter = (config) => {
         if (stub.timeout) {
           throwTimeout(config)
         }
-        request.respondWith(stub.response)
+        if(typeof stub.response === 'function') {
+          request.respondWith(stub.response(request))
+        } else {
+          request.respondWith(stub.response)
+        }
         stub.resolve()
         break
       }

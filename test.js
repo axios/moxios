@@ -131,6 +131,23 @@ describe('moxios', function () {
       })
     })
 
+    it('should stub requests with callback', function (done) {
+      moxios.stubRequest('/whoami', (request) => {
+        return {
+          status:   200,
+          response: request.url
+        }
+      })
+
+      axios.get('/whoami').then(onFulfilled)
+
+      moxios.wait(function () {
+        let response = onFulfilled.getCall(0).args[0]
+        deepEqual(response.data, '/whoami')
+        done()
+      })
+    })
+
     it('should stub timeout', function (done) {
       moxios.stubTimeout('/users/12345')
 
