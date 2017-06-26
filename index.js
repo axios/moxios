@@ -379,11 +379,18 @@ let moxios = {
    * This is naively using a `setTimeout`.
    * May need to beef this up a bit in the future.
    *
-   * @param {Function} fn The function to execute once waiting is over
+   * @param {Function} fn Optional function to execute once waiting is over
    * @param {Number} delay How much time in milliseconds to wait
+   *
+   * @return {Object} Promise that gets resolved when waiting completed
    */
-  wait: function(fn, delay = this.delay) {
-    setTimeout(fn, delay)
+  wait: function(...args) {
+    const cb = typeof args[0] === 'function' ? args.shift() : null
+    const delay = typeof args[0] !== 'undefined' ? args.shift() : this.delay
+
+    return new Promise(resolve => {
+      setTimeout(resolve, delay)
+    }).then(cb);
   }
 }
 

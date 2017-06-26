@@ -298,5 +298,45 @@ describe('moxios', function () {
         })
       })
     })
+
+    describe('wait', function() {
+      let timeSpy
+
+      beforeEach(function() {
+        timeSpy = sinon.spy(global, 'setTimeout');
+      })
+
+      afterEach(function() {
+        global.setTimeout.restore();
+      })
+
+      it('should return promise', function () {
+        return moxios.wait().then(() => {
+          equal(timeSpy.calledWith(sinon.match.any, moxios.delay), true);
+        })
+      })
+
+      it('should return promise that resolves after specified delay', function () {
+        return moxios.wait(33).then(() => {
+          equal(timeSpy.calledWith(sinon.match.any, 33), true);
+        })
+      })
+
+      it('should call both callback and `then`-function', function () {
+        let cbPromiseResolver = null;
+        let thenPromiseResolver = null;
+
+        const cbPromise = new Promise(resolve => cbPromiseResolver = resolve);
+        const thenPromise = new Promise(resolve => thenPromiseResolver = resolve);
+
+        moxios.wait(() => {
+          cbPromiseResolver();
+        }).then(() => {
+          thenPromiseResolver();
+        })
+
+        return Promise.all([cbPromise, thenPromise]);
+      })
+    })
   })
 })
