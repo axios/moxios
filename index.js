@@ -308,13 +308,19 @@ let moxios = {
 
   /**
    * Stub a response to be used to respond to a request matching a method and a URL or RegExp
+   * The first parameter is optional for backwards compatability reasons. It might change to
+   * a required parameter in the future. Please always specify a method
    *
-   * @param {String} method An axios command
+   * @param {String} [method] An axios command
    * @param {String|RegExp} urlOrRegExp A URL or RegExp to test against
    * @param {Object} response The response to use when a match is made
    */
-  stubRequest: function (urlOrRegExp, response) {
-    this.stubs.track({url: urlOrRegExp, response});
+  stubRequest: function(...args) {
+    if (args.length === 3) {
+      this.stubs.track({method: args[0], url: args[1], response: args[2]});
+    } else {
+      this.stubs.track({url: args[0], response: args[1]});
+    }
   },
 
   /**
