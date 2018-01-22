@@ -3,7 +3,7 @@ module.exports = function(config) {
 
     basePath: '',
 
-    frameworks: ['mocha', 'sinon'],
+    frameworks: ['jasmine', 'sinon'],
 
     files: [
       './spec/**/*Spec.js'

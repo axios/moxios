@@ -1,5 +1,5 @@
 {
-  "name": "moxios",
+  "name": "karma-jasmine-moxios",
   "version": "0.4.0",
   "description": "Mock axios requests for testing",
   "main": "dist/moxios.js",
@@ -14,10 +14,6 @@
     "dist/",
     "README.md"
   ],
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/mzabriskie/moxios.git"
-  },
   "keywords": [
     "axios",
     "test",
@@ -37,16 +33,15 @@
     "babel-loader": "^6.2.4",
     "babel-plugin-add-module-exports": "^0.2.1",
     "babel-preset-es2015": "^6.9.0",
-    "chai": "^3.5.0",
+    "jasmine": "^2.9.0",
     "karma": "^0.13.22",
     "karma-cli": "^1.0.0",
     "karma-firefox-launcher": "^1.0.0",
-    "karma-mocha": "^1.0.1",
+    "karma-jasmine": "^1.1.1",
     "karma-sinon": "^1.0.5",
     "karma-sourcemap-loader": "^0.3.7",
     "karma-webpack": "^1.7.0",
     "lolex": "^1.5.0",
-    "mocha": "^2.5.3",
     "moxios": "^0.4.0",
     "sinon": "^1.17.4",
     "webpack": "^1.13.1",
