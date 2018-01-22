@@ -1,31 +1,8 @@
-import axios from 'axios'
 
-class Request {
-  /**
-   * Create a new Request object
-   *
-   * @param {Function} resolve The function to call when Promise is resolved
-   * @param {Function} reject The function to call when Promise is rejected
-   * @param {Object} config The config object to be used for the request
-   */
-  constructor(resolve, reject, config) {
-    this.resolve = resolve
-    this.reject = reject
-    this.config = config
-  }
+let hi = 'Congrates! Now you can start coding.'
 
-  /**
-   * Respond to this request with a timeout result
-   *
-   * @return {Promise} A Promise that rejects with a timeout result
-   */
-  respondWithTimeout() {
-    return new Promise(function(resolve, reject) {
-      resolve();
-    })
-  }
+console.log(hi)
+
+if(document) {
+    document.write(`<h1>${hi}</h1>`);
 }
-
-
-
-export default Request

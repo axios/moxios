@@ -14,7 +14,8 @@ module.exports = {
   output: {
     filename: './dist/bundle.js'
   },
-  devtool: 'source-map',
+  devtool: 'eval-source-map',
+  watch: true,
   externals: {
     'axios': 'axios'
   },

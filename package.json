@@ -5,6 +5,7 @@
   "main": "dist/moxios.js",
   "scripts": {
     "test": "karma start --single-run",
+    "start": "webpack-dev-server --inline --hot --progress --color --env.development ",
     "build": "webpack && MINIFY=1 webpack",
     "preversion": "npm test",
     "version": "npm run build && git add -A dist/",
