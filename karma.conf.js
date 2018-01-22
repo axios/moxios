@@ -6,14 +6,14 @@ module.exports = function(config) {
     frameworks: ['mocha', 'sinon'],
 
     files: [
-      'test.js'
+      './spec/**/*Spec.js'
     ],
 
     exclude: [
     ],
 
     preprocessors: {
-      'test.js': ['webpack', 'sourcemap']
+      './spec/**/*Spec.js': ['webpack', 'sourcemap']
     },
 
     reporters: ['progress'],

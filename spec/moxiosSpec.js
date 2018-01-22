@@ -1,6 +1,6 @@
 import { equal, notEqual, deepEqual } from 'assert'
 import axios from 'axios'
-import moxios from './index'
+import moxios from 'moxios'
 
 const USER_FRED = {
   id: 12345,
