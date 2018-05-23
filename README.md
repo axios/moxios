@@ -101,6 +101,30 @@ describe('mocking axios requests', function () {
 })
 ```
 
+## Mocking a axios.create() instance
+
+```
+describe('some-thing', () => {
+    let axiosInstance;
+    beforeEach(() => {
+      axiosInstance = axios.create();
+      moxios.install(axiosInstance);
+    });
+    afterEach(() => {
+      moxios.uninstall(axiosInstance);
+    });
+    it('should axios a thing', (done) => {
+        moxios.stubRequest('http://www.somesite.com/awesome-url', {
+          status: 200,
+          responseText: reducedAsxResponse
+        });
+        axiosInstance.get('http://www.somesite.com/awesome-url')
+            .then(res => assert(res.status === 200))
+            .finally(done);
+    });
+});
+```
+
 ## Thanks
 
 moxios is heavily inspired by [jasmine-ajax](https://github.com/jasmine/jasmine-ajax)
