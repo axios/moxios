@@ -155,7 +155,7 @@ class Tracker {
    */
   get(method, url) {
     function getElem (element, index, array) {
-      let matchedUrl = element.url instanceof RegExp ? element.url.test(element.url) : element.url === url;
+      let matchedUrl = element.url instanceof RegExp ? element.url.test(url) : element.url === url;
       let matchedMethod;
 
       if (element.config) {
