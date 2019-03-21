@@ -7,7 +7,7 @@ import settle from 'axios/lib/core/settle'
 import createError from 'axios/lib/core/createError'
 
 const TimeoutException = new Error('Timeout: Stub function not called.')
-const DEFAULT_WAIT_DELAY = 100
+const DEFAULT_WAIT_DELAY = 1
 
 // The default adapter
 let defaultAdapter
