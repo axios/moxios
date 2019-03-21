@@ -98,6 +98,23 @@ describe('mocking axios requests', function () {
     })
   })
 
+
+  it('Should reject the request', funciton (done) {
+    const errorResp = {
+        status: 400,
+        response: { message: 'invalid data' }
+    }
+    
+    moxios.wait(function () {
+      let request = moxios.requests.mostRecent()
+      request.reject(errorResp)
+      }).catch(function (err) {
+        equal(err.status, errorResp.status)
+        equal(err.response.message, errorResp.response.message)
+        done()
+      })
+    })
+  })
 })
 ```
 
