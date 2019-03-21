@@ -120,7 +120,7 @@ describe('mocking axios requests', function () {
 
 ## Mocking a axios.create() instance
 
-```
+```js
 describe('some-thing', () => {
     let axiosInstance;
     beforeEach(() => {
