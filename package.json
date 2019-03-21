@@ -45,6 +45,7 @@
     "karma": "^0.13.22",
     "karma-cli": "^1.0.0",
     "karma-firefox-launcher": "^1.0.0",
+    "karma-chrome-launcher": "^2.2.0",
     "karma-mocha": "^1.0.1",
     "karma-sinon": "^1.0.5",
     "karma-sourcemap-loader": "^0.3.7",
