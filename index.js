@@ -163,7 +163,7 @@ class Tracker {
         matchedMethod = method.toLowerCase() === element.config.method.toLowerCase();
       } else {
         // stub tracking
-        matchedMethod = method.toLowerCase() === element.method.toLowerCase();
+        matchedMethod = element.method && method.toLowerCase() === element.method.toLowerCase();
       }
 
       if (matchedUrl && matchedMethod) {
