@@ -47,7 +47,7 @@ describe('mocking axios requests', function () {
             { id: 1, firstName: 'Fred', lastName: 'Flintstone' },
             { id: 2, firstName: 'Wilma', lastName: 'Flintstone' }
           ]
-        }).then(function () {
+        }).then(function (done) {
           let list = document.querySelector('.UserList__Data')
           equal(list.rows.length, 2)
           equal(list.rows[0].cells[0].innerHTML, 'Fred')
