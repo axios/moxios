@@ -54,7 +54,6 @@ let mockAdapter = (config) => {
   return new Promise(function (resolve, reject) {
     let request = new Request(resolve, reject, config)
     moxios.requests.track(request)
-    const hasBaseUrl = config && config.baseURL && true
 
     // Check for matching stub to auto respond with
     for (let i=0, l=moxios.stubs.count(); i<l; i++) {
