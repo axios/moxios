@@ -187,6 +187,26 @@ describe('moxios', function () {
         notEqual(request, undefined)
       })
 
+      it('should find a single stub by url using RegExp', function () {
+        moxios.stubOnce('GET', /^\/users\/\d+$/, {
+          status: 200
+        })
+
+        let request = moxios.stubs.get('GET', '/users/12345')
+
+        notEqual(request, undefined)
+      })
+
+      it('should find first request by url using RegExp', function (done) {
+        axios.get('/users/12345?param=axios&param2=moxios')
+
+        moxios.wait(function () {
+          let request = moxios.requests.get('get', /\/users\/12345.*/)
+          notEqual(request, undefined)
+          done()
+        })
+      })
+
       it('should remove a single stub by method', function () {
         moxios.stubOnce('PUT', '/users/12346', {
           status: 204
