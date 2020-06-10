@@ -99,7 +99,7 @@ describe('mocking axios requests', function () {
   })
 
 
-  it('Should reject the request', funciton (done) {
+  it('Should reject the request', function (done) {
     const errorResp = {
         status: 400,
         response: { message: 'invalid data' }
