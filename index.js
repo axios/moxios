@@ -17,9 +17,10 @@ let defaultAdapter
  *
  * @param {Object} tracked An item of a Tracker instance
  * @param {Object} request A Request
+ * @param {String} [baseURL] The base URL of the request config
  * @return {boolean} Whether or not the request is a match for the tracked item
  */
-let matchRequest = (tracked, request) => {
+let matchRequest = (tracked, request, baseURL = '') => {
   let matchedURL = false
   let matchedMethod = true
 
@@ -28,7 +29,7 @@ let matchRequest = (tracked, request) => {
   } else if (request.url instanceof RegExp) {
     matchedURL = request.url.test(tracked.url)
   } else {
-    matchedURL = tracked.url === request.url
+    matchedURL = `${baseURL || ''}${tracked.url}` === request.url
   }
 
   if (tracked.method) {
@@ -53,12 +54,13 @@ let mockAdapter = (config) => {
   return new Promise(function (resolve, reject) {
     let request = new Request(resolve, reject, config)
     moxios.requests.track(request)
+    const hasBaseUrl = config && config.baseURL && true
 
     // Check for matching stub to auto respond with
     for (let i=0, l=moxios.stubs.count(); i<l; i++) {
       let stub = moxios.stubs.at(i)
 
-      if (matchRequest(stub, request)) {
+      if (matchRequest(stub, request, config && config.baseURL)) {
         if (stub.timeout) {
           throwTimeout(config)
         }

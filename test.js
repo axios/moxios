@@ -384,6 +384,30 @@ describe('moxios', function () {
           done()
         })
       })
+
+      it('should stub requests with custom axios instance', function (done) {
+        moxios.uninstall()
+
+        const instance = axios.create({
+          baseURL: 'https://api.example.com'
+        })
+
+        moxios.install(instance)
+
+        moxios.stubOnce('GET', '/users/12346', {
+          status: 200,
+          response: USER_FRED
+        })
+
+        instance.get('/users/12346').then(onFulfilled)
+
+        moxios.wait(function () {
+          let response = onFulfilled.getCall(0).args[0]
+          equal(response.status, 200)
+          equal(response.data, USER_FRED)
+          done()
+        })
+      })
     })
   })
 })
