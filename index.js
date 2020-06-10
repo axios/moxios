@@ -35,7 +35,7 @@ let matchRequest = (tracked, request, baseURL = '') => {
   if (tracked.method) {
     // Stub tracking
     matchedMethod = request.config.method.toLowerCase() === tracked.method.toLowerCase()
-  } else if (tracked.config) {
+  } else if (tracked.config && tracked.config.method) {
     // Request tracking
     matchedMethod = request.config.method.toLowerCase() === tracked.config.method.toLowerCase()
   }
