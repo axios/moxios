@@ -47,13 +47,14 @@ describe('mocking axios requests', function () {
             { id: 1, firstName: 'Fred', lastName: 'Flintstone' },
             { id: 2, firstName: 'Wilma', lastName: 'Flintstone' }
           ]
-        }).then(function () {
-          let list = document.querySelector('.UserList__Data')
-          equal(list.rows.length, 2)
-          equal(list.rows[0].cells[0].innerHTML, 'Fred')
-          equal(list.rows[1].cells[0].innerHTML, 'Wilma')
-          done()
         })
+          .then(function () {
+            let list = document.querySelector('.UserList__Data')
+            equal(list.rows.length, 2)
+            equal(list.rows[0].cells[0].innerHTML, 'Fred')
+            equal(list.rows[1].cells[0].innerHTML, 'Wilma')
+            done()
+          })
       })
     })
 
@@ -65,7 +66,7 @@ describe('mocking axios requests', function () {
       })
 
       // Alternatively URL can be a RegExp
-      moxios.stubRequest(/say.*/, {/* ... */})
+      moxios.stubRequest(/say.*/, {/* … */})
 
       let onFulfilled = sinon.spy()
       axios.get('/say/hello').then(onFulfilled)
@@ -90,30 +91,30 @@ describe('mocking axios requests', function () {
           response: {
             id: 12345, firstName: 'Fred', lastName: 'Flintstone'
           }
-        }).then(function () {
-          equal(onFulfilled.called, true)
-          done()
         })
+          .then(function () {
+            equal(onFulfilled.called, true)
+            done()
+          })
       })
     })
   })
 
-
   it('Should reject the request', function (done) {
     const errorResp = {
-        status: 400,
-        response: { message: 'invalid data' }
+      status: 400,
+      response: { message: 'invalid data' }
     }
-    
+
     moxios.wait(function () {
       let request = moxios.requests.mostRecent()
       request.reject(errorResp)
-      }).catch(function (err) {
+    })
+      .catch(function (err) {
         equal(err.status, errorResp.status)
         equal(err.response.message, errorResp.response.message)
         done()
       })
-    })
   })
 })
 ```
@@ -122,24 +123,24 @@ describe('mocking axios requests', function () {
 
 ```js
 describe('some-thing', () => {
-    let axiosInstance;
-    beforeEach(() => {
-      axiosInstance = axios.create();
-      moxios.install(axiosInstance);
-    });
-    afterEach(() => {
-      moxios.uninstall(axiosInstance);
-    });
-    it('should axios a thing', (done) => {
-        moxios.stubRequest('http://www.somesite.com/awesome-url', {
-          status: 200,
-          responseText: reducedAsxResponse
-        });
-        axiosInstance.get('http://www.somesite.com/awesome-url')
-            .then(res => assert(res.status === 200))
-            .finally(done);
-    });
-});
+  let axiosInstance;
+  beforeEach(() => {
+    axiosInstance = axios.create();
+    moxios.install(axiosInstance);
+  })
+  afterEach(() => {
+    moxios.uninstall(axiosInstance)
+  })
+  it('should axios a thing', (done) => {
+    moxios.stubRequest('http://www.somesite.com/awesome-url', {
+      status: 200,
+      responseText: '…'
+    })
+    axiosInstance.get('http://www.somesite.com/awesome-url')
+      .then(res => assert(res.status === 200))
+      .finally(done)
+  })
+})
 ```
 
 ## Thanks
