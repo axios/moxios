@@ -1,6 +1,6 @@
-# moxios [![build status](https://img.shields.io/travis/mzabriskie/moxios.svg?style=flat-square)](https://travis-ci.org/mzabriskie/moxios)
+# moxios [![build status](https://img.shields.io/travis/axios/moxios.svg?style=flat-square)](https://travis-ci.org/axios/moxios)
 
-Mock [axios](https://github.com/mzabriskie/axios) requests for testing
+Mock [axios](https://github.com/axios/axios) requests for testing
 
 ## Installing
 
@@ -98,7 +98,48 @@ describe('mocking axios requests', function () {
     })
   })
 
+
+  it('Should reject the request', funciton (done) {
+    const errorResp = {
+        status: 400,
+        response: { message: 'invalid data' }
+    }
+    
+    moxios.wait(function () {
+      let request = moxios.requests.mostRecent()
+      request.reject(errorResp)
+      }).catch(function (err) {
+        equal(err.status, errorResp.status)
+        equal(err.response.message, errorResp.response.message)
+        done()
+      })
+    })
+  })
 })
+```
+
+## Mocking a axios.create() instance
+
+```js
+describe('some-thing', () => {
+    let axiosInstance;
+    beforeEach(() => {
+      axiosInstance = axios.create();
+      moxios.install(axiosInstance);
+    });
+    afterEach(() => {
+      moxios.uninstall(axiosInstance);
+    });
+    it('should axios a thing', (done) => {
+        moxios.stubRequest('http://www.somesite.com/awesome-url', {
+          status: 200,
+          responseText: reducedAsxResponse
+        });
+        axiosInstance.get('http://www.somesite.com/awesome-url')
+            .then(res => assert(res.status === 200))
+            .finally(done);
+    });
+});
 ```
 
 ## Thanks

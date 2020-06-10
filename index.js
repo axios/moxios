@@ -7,10 +7,41 @@ import settle from 'axios/lib/core/settle'
 import createError from 'axios/lib/core/createError'
 
 const TimeoutException = new Error('Timeout: Stub function not called.')
-const DEFAULT_WAIT_DELAY = 100
+const DEFAULT_WAIT_DELAY = 1
 
 // The default adapter
 let defaultAdapter
+
+/**
+ * Check if a tracked stub or request matches a request by comparing URL and method
+ *
+ * @param {Object} tracked An item of a Tracker instance
+ * @param {Object} request A Request
+ * @param {String} [baseURL] The base URL of the request config
+ * @return {boolean} Whether or not the request is a match for the tracked item
+ */
+let matchRequest = (tracked, request, baseURL = '') => {
+  let matchedURL = false
+  let matchedMethod = true
+
+  if (tracked.url instanceof RegExp) {
+    matchedURL = tracked.url.test(request.url)
+  } else if (request.url instanceof RegExp) {
+    matchedURL = request.url.test(tracked.url)
+  } else {
+    matchedURL = `${baseURL || ''}${tracked.url}` === request.url
+  }
+
+  if (tracked.method) {
+    // Stub tracking
+    matchedMethod = request.config.method.toLowerCase() === tracked.method.toLowerCase()
+  } else if (tracked.config) {
+    // Request tracking
+    matchedMethod = request.config.method.toLowerCase() === tracked.config.method.toLowerCase()
+  }
+
+  return matchedURL && matchedMethod
+}
 
 /**
  * The mock adapter that gets installed.
@@ -28,15 +59,8 @@ let mockAdapter = (config) => {
     // Check for matching stub to auto respond with
     for (let i=0, l=moxios.stubs.count(); i<l; i++) {
       let stub = moxios.stubs.at(i)
-      const url = hasBaseUrl ? config.baseURL + stub.url : stub.url
-      let correctURL = stub.url instanceof RegExp ? stub.url.test(request.url) : url === request.url;
-      let correctMethod = true;
 
-      if (stub.method !== undefined) {
-        correctMethod = stub.method.toLowerCase() === request.config.method.toLowerCase();
-      }
-
-      if (correctURL && correctMethod) {
+      if (matchRequest(stub, request, config && config.baseURL)) {
         if (stub.timeout) {
           throwTimeout(config)
         }
@@ -156,24 +180,13 @@ class Tracker {
    * Find and return element given the HTTP method and the URL.
    */
   get(method, url) {
-    function getElem (element, index, array) {
-      let matchedUrl = element.url instanceof RegExp ? element.url.test(element.url) : element.url === url;
-      let matchedMethod;
-
-      if (element.config) {
-        // request tracking
-        matchedMethod = method.toLowerCase() === element.config.method.toLowerCase();
-      } else {
-        // stub tracking
-        matchedMethod = method.toLowerCase() === element.method.toLowerCase();
-      }
-
-      if (matchedUrl && matchedMethod) {
-        return element;
-      }
+    // Mock a request config
+    let request = {
+      url,
+      config: { method }
     }
 
-    return this.__items.find(getElem);
+    return this.__items.find((item) => matchRequest(item, request));
   }
 
   /**
@@ -310,13 +323,19 @@ let moxios = {
 
   /**
    * Stub a response to be used to respond to a request matching a method and a URL or RegExp
+   * The first parameter is optional for backwards compatability reasons. It might change to
+   * a required parameter in the future. Please always specify a method
    *
-   * @param {String} method An axios command
+   * @param {String} [method] An axios command
    * @param {String|RegExp} urlOrRegExp A URL or RegExp to test against
    * @param {Object} response The response to use when a match is made
    */
-  stubRequest: function (urlOrRegExp, response) {
-    this.stubs.track({url: urlOrRegExp, response});
+  stubRequest: function(...args) {
+    if (args.length === 3) {
+      this.stubs.track({method: args[0], url: args[1], response: args[2]});
+    } else {
+      this.stubs.track({url: args[0], response: args[1]});
+    }
   },
 
   /**

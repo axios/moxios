@@ -131,6 +131,73 @@ describe('moxios', function () {
       })
     })
 
+    it('should stub GET requests', function (done) {
+      moxios.stubRequest('GET', '/users/12345', {
+        status: 200,
+        response: USER_FRED
+      })
+
+      axios.get('/users/12345').then(onFulfilled)
+
+      moxios.wait(function () {
+        let response = onFulfilled.getCall(0).args[0]
+        deepEqual(response.data, USER_FRED)
+        done()
+      })
+    })
+
+    it('should stub POST requests, but not GET requests', function (done) {
+      moxios.stubRequest('POST', '/users/', {
+        status: 200,
+        response: USER_FRED
+      })
+
+      axios.get('/users/').then(onFulfilled)
+      axios.post('/users/', USER_FRED).then(onFulfilled)
+
+      moxios.wait(function () {
+        equal(onFulfilled.calledOnce, true)
+        let response = onFulfilled.getCall(0).args[0]
+        deepEqual(response.data, USER_FRED)
+        done()
+      })
+    })
+
+    it('should pick the correct stub based on method', function (done) {
+      const USER_WILMA = {
+        id: 54321,
+        firstName: 'Wilma',
+        lastName: 'Flintstone'
+      }
+
+      moxios.stubRequest('GET', '/users/', {
+        status: 200,
+        response: USER_FRED
+      })
+
+      moxios.stubRequest('POST', '/users/', {
+        status: 200,
+        response: USER_WILMA
+      })
+
+      moxios.stubRequest('PUT', '/users/', {
+        status: 200,
+        response: USER_FRED
+      })
+
+      axios.put('/users/', USER_FRED).then(onFulfilled)
+      axios.post('/users/', USER_WILMA).then(onFulfilled)
+
+      moxios.wait(function () {
+        equal(onFulfilled.calledTwice, true)
+        let response = onFulfilled.getCall(0).args[0]
+        deepEqual(response.data, USER_FRED)
+        response = onFulfilled.getCall(1).args[0]
+        deepEqual(response.data, USER_WILMA)
+        done()
+      })
+    })
+
     it('should stub timeout', function (done) {
       moxios.stubTimeout('/users/12345')
 
@@ -185,6 +252,26 @@ describe('moxios', function () {
         let request = moxios.stubs.get('PUT', '/users/12345')
 
         notEqual(request, undefined)
+      })
+
+      it('should find a single stub by url using RegExp', function () {
+        moxios.stubOnce('GET', /^\/users\/\d+$/, {
+          status: 200
+        })
+
+        let request = moxios.stubs.get('GET', '/users/12345')
+
+        notEqual(request, undefined)
+      })
+
+      it('should find first request by url using RegExp', function (done) {
+        axios.get('/users/12345?param=axios&param2=moxios')
+
+        moxios.wait(function () {
+          let request = moxios.requests.get('get', /\/users\/12345.*/)
+          notEqual(request, undefined)
+          done()
+        })
       })
 
       it('should remove a single stub by method', function () {
