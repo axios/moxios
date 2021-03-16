@@ -55,6 +55,6 @@
     "mocha": "^2.5.3",
     "sinon": "^1.17.4",
     "webpack": "^1.13.1",
-    "webpack-dev-server": "^1.14.1"
+    "webpack-dev-server": "^3.1.11"
   }
 }
