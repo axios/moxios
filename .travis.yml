@@ -1,4 +1,6 @@
 language: node_js
+node_js:
+  - 12
 email:
   on_failure: change
   on_success: never
@@ -6,6 +8,5 @@ before_script:
   - "export DISPLAY=:99.0"
 services:
   - xvfb
-
 addons:
   chrome: stable
