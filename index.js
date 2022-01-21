@@ -1,7 +1,6 @@
 import axios from 'axios'
 import buildURL from 'axios/lib/helpers/buildURL'
 import isURLSameOrigin from 'axios/lib/helpers/isURLSameOrigin'
-import btoa from 'axios/lib/helpers/btoa'
 import cookies from 'axios/lib/helpers/cookies'
 import settle from 'axios/lib/core/settle'
 import createError from 'axios/lib/core/createError'
