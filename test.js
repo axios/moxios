@@ -86,15 +86,13 @@ describe('moxios', function () {
       moxios.withMock(function () {
         axios.get('/users/12345').then(onFulfilled)
 
-        moxios.wait(function () {
-          let request = moxios.requests.mostRecent()
-          request.respondWith({
-            status: 200,
-            response: USER_FRED
-          }).then(function () {
-            equal(onFulfilled.called, true)
-            done()
-          })
+        let request = moxios.requests.mostRecent()
+        request.respondWith({
+          status: 200,
+          response: USER_FRED
+        }).then(function () {
+          equal(onFulfilled.called, true)
+          done()
         })
       })
     })
@@ -106,12 +104,10 @@ describe('moxios', function () {
       moxios.withMock(function() {
         axios.get('/users/12345')
 
-        moxios.wait(function() {
-          let request = moxios.requests.mostRecent()
-          request.respondWithTimeout().catch(function(err) {
-            equal(err.code, 'ECONNABORTED')
-            done()
-          })
+        let request = moxios.requests.mostRecent()
+        request.respondWithTimeout().catch(function(err) {
+          equal(err.code, 'ECONNABORTED')
+          done()
         })
       })
     })
@@ -388,9 +384,7 @@ describe('moxios', function () {
       it('should stub requests with custom axios instance', function (done) {
         moxios.uninstall()
 
-        const instance = axios.create({
-          baseURL: 'https://api.example.com'
-        })
+        const instance = axios.create();
 
         moxios.install(instance)
 
@@ -399,10 +393,7 @@ describe('moxios', function () {
           response: USER_FRED
         })
 
-        instance.get('/users/12346').then(onFulfilled)
-
-        moxios.wait(function () {
-          let response = onFulfilled.getCall(0).args[0]
+        instance.get('/users/12346').then(function (response) {
           equal(response.status, 200)
           equal(response.data, USER_FRED)
           done()
