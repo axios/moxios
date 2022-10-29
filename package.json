@@ -42,7 +42,7 @@
     "babel-plugin-add-module-exports": "^0.2.1",
     "babel-preset-es2015": "^6.9.0",
     "chai": "^3.5.0",
-    "karma": "^0.13.22",
+    "karma": "^6.4.1",
     "karma-chrome-launcher": "^2.2.0",
     "karma-cli": "^1.0.0",
     "karma-firefox-launcher": "^1.0.0",
