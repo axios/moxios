@@ -52,7 +52,7 @@
     "karma-sourcemap-loader": "^0.3.7",
     "karma-webpack": "^1.7.0",
     "lolex": "^1.5.0",
-    "mocha": "^2.5.3",
+    "mocha": "^10.1.0",
     "sinon": "^1.17.4",
     "webpack": "^1.13.1",
     "webpack-dev-server": "^3.1.11"
