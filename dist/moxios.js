@@ -52,7 +52,7 @@ return /******/ (function(modules) { // webpackBootstrap
 /************************************************************************/
 /******/ ([
 /* 0 */
-/***/ function(module, exports, __webpack_require__) {
+/***/ (function(module, exports, __webpack_require__) {
 
 	'use strict';
 	
@@ -95,10 +95,43 @@ return /******/ (function(modules) { // webpackBootstrap
 	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 	
 	var TimeoutException = new Error('Timeout: Stub function not called.');
-	var DEFAULT_WAIT_DELAY = 100;
+	var DEFAULT_WAIT_DELAY = 1;
 	
 	// The default adapter
 	var defaultAdapter = void 0;
+	
+	/**
+	 * Check if a tracked stub or request matches a request by comparing URL and method
+	 *
+	 * @param {Object} tracked An item of a Tracker instance
+	 * @param {Object} request A Request
+	 * @param {String} [baseURL] The base URL of the request config
+	 * @return {boolean} Whether or not the request is a match for the tracked item
+	 */
+	var matchRequest = function matchRequest(tracked, request) {
+	  var baseURL = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : '';
+	
+	  var matchedURL = false;
+	  var matchedMethod = true;
+	
+	  if (tracked.url instanceof RegExp) {
+	    matchedURL = tracked.url.test(request.url);
+	  } else if (request.url instanceof RegExp) {
+	    matchedURL = request.url.test(tracked.url);
+	  } else {
+	    matchedURL = '' + (baseURL || '') + tracked.url === request.url;
+	  }
+	
+	  if (tracked.method) {
+	    // Stub tracking
+	    matchedMethod = request.config.method.toLowerCase() === tracked.method.toLowerCase();
+	  } else if (tracked.config && tracked.config.method) {
+	    // Request tracking
+	    matchedMethod = request.config.method.toLowerCase() === tracked.config.method.toLowerCase();
+	  }
+	
+	  return matchedURL && matchedMethod;
+	};
 	
 	/**
 	 * The mock adapter that gets installed.
@@ -115,14 +148,8 @@ return /******/ (function(modules) { // webpackBootstrap
 	    // Check for matching stub to auto respond with
 	    for (var i = 0, l = moxios.stubs.count(); i < l; i++) {
 	      var stub = moxios.stubs.at(i);
-	      var correctURL = stub.url instanceof RegExp ? stub.url.test(request.url) : stub.url === request.url;
-	      var correctMethod = true;
 	
-	      if (stub.method !== undefined) {
-	        correctMethod = stub.method.toLowerCase() === request.config.method.toLowerCase();
-	      }
-	
-	      if (correctURL && correctMethod) {
+	      if (matchRequest(stub, request, config && config.baseURL)) {
 	        if (stub.timeout) {
 	          throwTimeout(config);
 	        }
@@ -269,24 +296,15 @@ return /******/ (function(modules) { // webpackBootstrap
 	  }, {
 	    key: 'get',
 	    value: function get(method, url) {
-	      function getElem(element, index, array) {
-	        var matchedUrl = element.url instanceof RegExp ? element.url.test(element.url) : element.url === url;
-	        var matchedMethod = void 0;
+	      // Mock a request config
+	      var request = {
+	        url: url,
+	        config: { method: method }
+	      };
 	
-	        if (element.config) {
-	          // request tracking
-	          matchedMethod = method.toLowerCase() === element.config.method.toLowerCase();
-	        } else {
-	          // stub tracking
-	          matchedMethod = method.toLowerCase() === element.method.toLowerCase();
-	        }
-	
-	        if (matchedUrl && matchedMethod) {
-	          return element;
-	        }
-	      }
-	
-	      return this.__items.find(getElem);
+	      return this.__items.find(function (item) {
+	        return matchRequest(item, request);
+	      });
 	    }
 	
 	    /**
@@ -315,7 +333,6 @@ return /******/ (function(modules) { // webpackBootstrap
 	   * @param {Function} reject The function to call when Promise is rejected
 	   * @param {Object} config The config object to be used for the request
 	   */
-	
 	  function Request(resolve, reject, config) {
 	    _classCallCheck(this, Request);
 	
@@ -426,7 +443,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	   * Install the mock adapter for axios
 	   */
 	  install: function install() {
-	    var instance = arguments.length <= 0 || arguments[0] === undefined ? _axios2.default : arguments[0];
+	    var instance = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : _axios2.default;
 	
 	    defaultAdapter = instance.defaults.adapter;
 	    instance.defaults.adapter = mockAdapter;
@@ -436,7 +453,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	   * Uninstall the mock adapter and reset state
 	   */
 	  uninstall: function uninstall() {
-	    var instance = arguments.length <= 0 || arguments[0] === undefined ? _axios2.default : arguments[0];
+	    var instance = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : _axios2.default;
 	
 	    instance.defaults.adapter = defaultAdapter;
 	    this.stubs.reset();
@@ -445,13 +462,19 @@ return /******/ (function(modules) { // webpackBootstrap
 	
 	  /**
 	   * Stub a response to be used to respond to a request matching a method and a URL or RegExp
+	   * The first parameter is optional for backwards compatability reasons. It might change to
+	   * a required parameter in the future. Please always specify a method
 	   *
-	   * @param {String} method An axios command
+	   * @param {String} [method] An axios command
 	   * @param {String|RegExp} urlOrRegExp A URL or RegExp to test against
 	   * @param {Object} response The response to use when a match is made
 	   */
-	  stubRequest: function stubRequest(urlOrRegExp, response) {
-	    this.stubs.track({ url: urlOrRegExp, response: response });
+	  stubRequest: function stubRequest() {
+	    if (arguments.length === 3) {
+	      this.stubs.track({ method: arguments.length <= 0 ? undefined : arguments[0], url: arguments.length <= 1 ? undefined : arguments[1], response: arguments.length <= 2 ? undefined : arguments[2] });
+	    } else {
+	      this.stubs.track({ url: arguments.length <= 0 ? undefined : arguments[0], response: arguments.length <= 1 ? undefined : arguments[1] });
+	    }
 	  },
 	
 	  /**
@@ -520,28 +543,37 @@ return /******/ (function(modules) { // webpackBootstrap
 	   * This is naively using a `setTimeout`.
 	   * May need to beef this up a bit in the future.
 	   *
-	   * @param {Function} fn The function to execute once waiting is over
+	   * @param {Function} fn Optional function to execute once waiting is over
 	   * @param {Number} delay How much time in milliseconds to wait
+	   *
+	   * @return {Object} Promise that gets resolved when waiting completed
 	   */
-	  wait: function wait(fn) {
-	    var delay = arguments.length <= 1 || arguments[1] === undefined ? this.delay : arguments[1];
+	  wait: function wait() {
+	    for (var _len = arguments.length, args = Array(_len), _key = 0; _key < _len; _key++) {
+	      args[_key] = arguments[_key];
+	    }
 	
-	    setTimeout(fn, delay);
+	    var cb = typeof args[0] === 'function' ? args.shift() : null;
+	    var delay = typeof args[0] !== 'undefined' ? args.shift() : this.delay;
+	
+	    return new Promise(function (resolve) {
+	      setTimeout(resolve, delay);
+	    }).then(cb);
 	  }
 	};
 	
 	exports.default = moxios;
 	module.exports = exports['default'];
 
-/***/ },
+/***/ }),
 /* 1 */
-/***/ function(module, exports) {
+/***/ (function(module, exports) {
 
 	module.exports = __WEBPACK_EXTERNAL_MODULE_1__;
 
-/***/ },
+/***/ }),
 /* 2 */
-/***/ function(module, exports, __webpack_require__) {
+/***/ (function(module, exports, __webpack_require__) {
 
 	'use strict';
 	
@@ -613,9 +645,9 @@ return /******/ (function(modules) { // webpackBootstrap
 	};
 
 
-/***/ },
+/***/ }),
 /* 3 */
-/***/ function(module, exports, __webpack_require__) {
+/***/ (function(module, exports, __webpack_require__) {
 
 	'use strict';
 	
@@ -918,9 +950,9 @@ return /******/ (function(modules) { // webpackBootstrap
 	};
 
 
-/***/ },
+/***/ }),
 /* 4 */
-/***/ function(module, exports) {
+/***/ (function(module, exports) {
 
 	'use strict';
 	
@@ -935,9 +967,9 @@ return /******/ (function(modules) { // webpackBootstrap
 	};
 
 
-/***/ },
+/***/ }),
 /* 5 */
-/***/ function(module, exports, __webpack_require__) {
+/***/ (function(module, exports, __webpack_require__) {
 
 	'use strict';
 	
@@ -1009,9 +1041,9 @@ return /******/ (function(modules) { // webpackBootstrap
 	);
 
 
-/***/ },
+/***/ }),
 /* 6 */
-/***/ function(module, exports) {
+/***/ (function(module, exports) {
 
 	'use strict';
 	
@@ -1051,9 +1083,9 @@ return /******/ (function(modules) { // webpackBootstrap
 	module.exports = btoa;
 
 
-/***/ },
+/***/ }),
 /* 7 */
-/***/ function(module, exports, __webpack_require__) {
+/***/ (function(module, exports, __webpack_require__) {
 
 	'use strict';
 	
@@ -1110,9 +1142,9 @@ return /******/ (function(modules) { // webpackBootstrap
 	);
 
 
-/***/ },
+/***/ }),
 /* 8 */
-/***/ function(module, exports, __webpack_require__) {
+/***/ (function(module, exports, __webpack_require__) {
 
 	'use strict';
 	
@@ -1141,9 +1173,9 @@ return /******/ (function(modules) { // webpackBootstrap
 	};
 
 
-/***/ },
+/***/ }),
 /* 9 */
-/***/ function(module, exports, __webpack_require__) {
+/***/ (function(module, exports, __webpack_require__) {
 
 	'use strict';
 	
@@ -1164,9 +1196,9 @@ return /******/ (function(modules) { // webpackBootstrap
 	};
 
 
-/***/ },
+/***/ }),
 /* 10 */
-/***/ function(module, exports) {
+/***/ (function(module, exports) {
 
 	'use strict';
 	
@@ -1189,7 +1221,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	};
 
 
-/***/ }
+/***/ })
 /******/ ])
 });
 ;
